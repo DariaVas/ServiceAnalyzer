@@ -1,1 +1,3 @@
 ServiceAnalyzer/venv/
+ServiceAnalyzer/__pycache__/
+ServiceAnalyzer/.idea/
