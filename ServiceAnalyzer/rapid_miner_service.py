@@ -33,24 +33,25 @@ class RapidMinerService(DataMiningService):
         df = self._connector.read_resource(self._data_path)
         outliers = self._connector.run_process(PROCESSES['outliers'], inputs=[df])
         print(outliers)
-        return outliers['outlier'].to_numpy().tolist()
+        return {"result": outliers['outlier'].to_numpy().tolist()}
 
     def get_prediction(self, data_to_predict_path, target_name):
         df_to_predict = pandas.read_csv(data_to_predict_path)
         df = self._connector.read_resource(self._data_path)
         prediction = self._connector.run_process(PROCESSES['prediction'], inputs=[df, df_to_predict],
                                                  macros={'target': target_name})
-        return prediction['prediction(%s)' % target_name].values.tolist()
+        return {"result": prediction['prediction(%s)' % target_name].values.tolist()}
 
     def get_linear_regression_weights(self, target_name):
         df = self._connector.read_resource(self._data_path)
-        weights = self._connector.run_process(PROCESSES['linear_regression'], inputs=[df], macros={'target':target_name})
-        return weights.values.tolist()
+        weights = self._connector.run_process(PROCESSES['linear_regression'], inputs=[df],
+                                              macros={'target': target_name})
+        return {"result": weights.values.tolist()}
 
     def get_clusters(self):
         df = self._connector.read_resource(self._data_path)
         clusters = self._connector.run_process(PROCESSES['k_means_clusters'], inputs=[df])
-        return clusters['cluster'].values.tolist()
+        return {"result": clusters['cluster'].values.tolist()}
 
     def _get_logged_time(self):
         if not os.path.exists(TIME_EXECUTION_PATH):
@@ -64,16 +65,21 @@ class RapidMinerService(DataMiningService):
                 return sum(nums)
 
     def measure_time_execution(self, func, **kwargs):
-        print('Rapid miner service. Running function ', func.__name__)
-        import time
-        ms_koef = 1000
-        ts = time.time()
-        res = func(**kwargs)
-        te = time.time()
-        diff1 = (te - ts)*ms_koef
-        diff = self._get_logged_time()
-        print('Rapid miner service. {} execution time: {}, manual time {}'.format(func.__name__, diff, diff1))
-        return diff, res
+        def measure():
+            print('Rapid miner service. Running function ', func.__name__)
+            import time
+            ms_koef = 1000
+            ts = time.time()
+            res = func(**kwargs)
+            te = time.time()
+            diff1 = (te - ts) * ms_koef
+            diff = self._get_logged_time()
+            print('Rapid miner service. {} execution time: {}, manual time {}'.format(func.__name__, diff, diff1))
+            if not res.get("criteria"):
+                res["criteria"] = {}
+            res["criteria"]["execution_time"] = diff
+            return res
+        return measure
 
     def run_empty_process(self):
         self._connector.run_process('//Local Repository/empty_process')

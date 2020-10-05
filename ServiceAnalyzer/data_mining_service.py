@@ -37,5 +37,5 @@ class DataMiningService(ABC):
         pass
 
     @abstractmethod
-    def measure_time_execution(self, func):
+    def measure_time_execution(self, func, **kwargs):
         pass
