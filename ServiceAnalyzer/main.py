@@ -108,7 +108,6 @@ def main():
     window = ServiceAnalyzerApp()
     window.show()
     app.exec_()
-    #run()
     return 0
 
 

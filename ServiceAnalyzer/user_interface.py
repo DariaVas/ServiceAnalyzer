@@ -1,3 +1,4 @@
+import pyqtgraph as pg
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QTableWidget, QTableWidgetItem, QInputDialog, QMessageBox
 import csv
 import mainwindow
@@ -20,6 +21,7 @@ class ServiceStatus:
 class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
     def __init__(self):
         super().__init__()
+        self.graph_windows = {'Orange3': GraphWindow(), 'Rapid Miner': GraphWindow()}
         self.setupUi(self)
         self.service_analyzer = ServiceAnalyzer()
         self.btn_browse_path.clicked.connect(self.onBrowseDataPathClicked)
@@ -97,14 +99,24 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
                 service_result_table.setItem(service_result_table.rowCount() - 1, j, item)
                 j += 1
 
-    def show_service_results(self, config, service_results, label):
-        if not config.get("evaluation_criteria"):
+    def _show_chart(self, data, service_name):
+        self.graph_windows[service_name].setWindowTitle(
+            "{} execution time dependence from amount of data".format(service_name))
+        self.graph_windows[service_name].setGeometry(self.geometry())
+        self.graph_windows[service_name].update_plot(data)
+        self.graph_windows[service_name].show()
+
+    def show_service_results(self, _config, service_results, label, service_name):
+        if not _config.get("evaluation_criteria"):
             return
-        results = ""
-        for c in service_results["criteria"]:
-            v = service_results["criteria"][c]
-            readable_c = " ".join(c.split("_"))
-            results = results + "{}: {}\n".format(readable_c, v)
+        results = ''
+        for c in service_results:
+            if c == 'execution_time':
+                results = results + "{}: {}\n".format("execution time", c['execution_time'])
+            if c == 'time_dependence':
+                self._show_chart(service_results['time_dependence'], service_name)
+        if not results:
+            results = 'unknown'
         label.setText(results)
 
     def process(self):
@@ -115,7 +127,9 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
                          'comparison': [],
                          'evaluation_criteria': [],
                          'target': '',
-                         'data_to_predict': ''
+                         'data_to_predict': '',
+                         'rows_increment_index': '',
+                         'num_experiments': '',
                          }
         try:
             self.clean_table(self.prediction_table)
@@ -131,15 +145,21 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
                     QFileDialog.getOpenFileName(self, 'Path to data for prediction', filter='*.csv',
                                                 directory=DEFAULT_SOURCE_PATH)[0]
                 if not fname:
-                    self.show_error_msg('Need path to preditction')
+                    self.show_error_msg('Need path to prediction')
                 self.load_cvs_file_to_table(fname, self.prediction_table)
                 configuration['data_to_predict'] = fname
 
             configuration['functionality'] = Functionality(index)
-            if self.cBx_compare_results:
+            if self.cBx_compare_results.isChecked():
                 configuration['comparison'].append(ComparisonCriteria.results)
-            if self.cBx_find_execution_time:
+            if self.cBx_find_execution_time.isChecked():
                 configuration['evaluation_criteria'].append(EvaluationCriteria.execution_time)
+            if self.cBx_find_time_dependency.isChecked():
+                configuration['evaluation_criteria'].append(EvaluationCriteria.time_dependence_from_data)
+                if not self.lineEdit_num_experiments.text() or not self.lineEdit_data_increments.text():
+                    raise RuntimeError('Amount of incremented rows and number of experiments must be set!')
+                configuration['rows_increment_index'] = int(self.lineEdit_data_increments.text())
+                configuration['num_experiments'] = int(self.lineEdit_num_experiments.text())
 
             if configuration['orange']:
                 self.label_orange_status.setText(ServiceStatus.in_progress)
@@ -150,12 +170,14 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
 
             if configuration['orange']:
                 self.label_orange_status.setText(ServiceStatus.completed)
-                self.show_service_results(configuration, results.get('orange'), self.label_orange_criteria_results)
+                self.show_service_results(configuration, results.get('orange'), self.label_orange_criteria_results,
+                                          'Orange3')
                 self.show_service_result_table(results.get('orange')['result'], self.orange_result_table)
 
             if configuration['rapidminer']:
                 self.label_rp_status.setText(ServiceStatus.completed)
-                self.show_service_results(configuration, results.get('rapidminer'), self.label_rp_results)
+                self.show_service_results(configuration, results.get('rapidminer'), self.label_rp_results,
+                                          'Rapid Miner')
                 self.show_service_result_table(results.get('rapidminer')['result'], self.rp_result_table)
         except Exception as ex:
             print(ex)
@@ -170,6 +192,25 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
         # run process
         # show results
         th = Thread(target=self.process)
+        self.label_status.setText("Processing")
         self.label_status.setStyleSheet(VISIBLE_STYLE)
         self.setEnabled(False)
         th.start()
+
+
+class GraphWindow(QMainWindow):
+    def __init__(self, *args, **kwargs):
+        super(GraphWindow, self).__init__(*args, **kwargs)
+        self.graphWidget = pg.PlotWidget()
+        self.setCentralWidget(self.graphWidget)
+        self.graphWidget.plotItem.getAxis('left').setLabel('time (ms)')
+        self.graphWidget.plotItem.getAxis('bottom').setLabel('number of processed rows')
+
+    def update_plot(self, data):
+        # plot data: x - num rows y - time values
+        time = []
+        rows = []
+        for r, t in data:
+            time.append(t)
+            rows.append(r)
+        self.graphWidget.plot(rows, time, clear=None, meta='time dependence from amount of data')

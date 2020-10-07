@@ -17,7 +17,7 @@ class Orange3Service(DataMiningService):
         data_table = data.Table(self._data_path)
         lof = classification.LocalOutlierFactorLearner()
         res = lof(data_table)(data_table)
-        return {"result": list(res.get_column_view('Outlier')[0])}
+        return list(res.get_column_view('Outlier')[0])
 
     def get_prediction(self, data_to_predict_path, target_name):
         data_domain = data.Domain(attributes=[
@@ -58,7 +58,7 @@ class Orange3Service(DataMiningService):
         pred = model.backmap_value(pred, prob, n_values, backmappers)
         results.predicted = pred.reshape((1, len(data_to_predict_table)))
         results.probabilities = prob.reshape((1,) + prob.shape)
-        return {"result": results.predicted[0].tolist()}
+        return results.predicted[0].tolist()
 
     def get_linear_regression_weights(self, target_name):
         data_table = data.Table(self._data_path)
@@ -83,24 +83,22 @@ class Orange3Service(DataMiningService):
         result = []
         for i in range(len(columns)):
             result.append([columns[i], model.coefficients[i]])
-        return {"result": result}
+        return result
 
     def get_clusters(self):
         data_table = data.Table(self._data_path)
         km = clustering.KMeans()
-        return {"result": km(data_table).tolist()}
+        return km(data_table).tolist()
 
     def measure_time_execution(self, func, **kwargs):
-        def measure():
-            ms_koef = 1000
-            print('Orange service.Running function ', func.__name__)
-            ts = datetime.datetime.now().timestamp() * ms_koef
-            res = func(**kwargs)
-            te = datetime.datetime.now().timestamp() * ms_koef
-            diff = te - ts
-            print('Orange service.{} execution time: {}'.format(func.__name__, diff))
-            if not res.get("criteria"):
-                res["criteria"] = {}
-            res["criteria"]["execution_time"] = diff
-            return res
-        return measure
+        ms_koef = 1000
+        print('Orange service.Running function ', func.__name__)
+        ts = datetime.datetime.now().timestamp() * ms_koef
+        res = func(**kwargs)
+        te = datetime.datetime.now().timestamp() * ms_koef
+        diff = te - ts
+        print('Orange service.{} execution time: {}'.format(func.__name__, diff))
+        return res, diff
+
+    def set_data_path(self, data_path):
+        self._data_path = data_path
