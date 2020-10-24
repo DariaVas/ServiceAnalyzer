@@ -51,7 +51,7 @@
             <x>9</x>
             <y>9</y>
             <width>441</width>
-            <height>420</height>
+            <height>496</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_0">
@@ -124,6 +124,74 @@
                  <string>k-means clustering</string>
                 </property>
                </item>
+              </widget>
+             </item>
+             <item>
+              <layout class="QVBoxLayout" name="verticalLayout_10">
+               <item>
+                <widget class="QLabel" name="label_11">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="styleSheet">
+                  <string notr="true">bold</string>
+                 </property>
+                 <property name="text">
+                  <string>Path to prediction data:</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QHBoxLayout" name="horizontalLayout_3">
+                 <item>
+                  <widget class="QLineEdit" name="edit_prediction_data_path">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="layoutDirection">
+                    <enum>Qt::LeftToRight</enum>
+                   </property>
+                   <property name="text">
+                    <string>/home/dasha/Documents/DiplomaFolder/Wine/winequality-red_100_experimental.csv</string>
+                   </property>
+                   <property name="alignment">
+                    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="btn_browse_predi_path">
+                   <property name="enabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="text">
+                    <string>browse..</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_4">
+             <item>
+              <widget class="QLabel" name="label_12">
+               <property name="text">
+                <string>Target column name:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="lineEdit_target_name">
+               <property name="enabled">
+                <bool>false</bool>
+               </property>
+               <property name="text">
+                <string>quality</string>
+               </property>
               </widget>
              </item>
             </layout>
@@ -397,8 +465,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>519</width>
-               <height>481</height>
+               <width>80</width>
+               <height>16</height>
               </rect>
              </property>
              <property name="sizePolicy">
@@ -506,8 +574,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>519</width>
-               <height>481</height>
+               <width>80</width>
+               <height>16</height>
               </rect>
              </property>
              <property name="sizePolicy">
@@ -575,6 +643,16 @@
            </layout>
           </item>
           <item>
+           <widget class="QLabel" name="label_notes">
+            <property name="styleSheet">
+             <string notr="true">color:rgba(0, 170, 0, 0);</string>
+            </property>
+            <property name="text">
+             <string>TextLabel</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QLabel" name="label_9">
             <property name="text">
              <string>Table with results:</string>
@@ -615,8 +693,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>519</width>
-               <height>481</height>
+               <width>80</width>
+               <height>16</height>
               </rect>
              </property>
              <property name="sizePolicy">
@@ -692,7 +770,6 @@
              <verstretch>0</verstretch>
             </sizepolicy>
            </property>
-           <zorder>tabWidget</zorder>
           </widget>
          </widget>
         </item>

@@ -6,6 +6,7 @@ from orange3_service import Orange3Service
 from utils import read_cvs_file, generate_test_cvs_file
 from service_comparator import ServiceComparator
 
+
 class Functionality(Enum):
     outliers = 1
     linear_regression = 2
@@ -89,16 +90,40 @@ class ServiceAnalyzer:
                                                       target_name=self.config['target'])
         elif functionality == Functionality.k_means_clustering:
             results = self._run_service_functionality(service, service.get_clusters)
+            print(results)
         else:
             raise RuntimeError('Unknown functionality')
         return results
 
+    def _get_service_comparison_results(self, results):
+        functionality = self.config['functionality']
+        compare_results = ''
+        if functionality == Functionality.outliers:
+            compare_results = self.service_comparator.compare_outliers(r_outliers=results['rapidminer']['result'],
+                                                                       o_outliers=results['orange']['result'])
+        elif functionality == Functionality.linear_regression:
+            compare_results = self.service_comparator.compare_linear_regression_coefs(
+                r_coefs=results['rapidminer']['result'],
+                o_coefs=results['orange']['result'])
+        elif functionality == Functionality.prediction:
+            compare_results = self.service_comparator.compare_predictions(r_predicts=results['rapidminer']['result'],
+                                                                          o_predicts=results['orange']['result'])
+        elif functionality == Functionality.k_means_clustering:
+            compare_results = self.service_comparator.compare_clusters(r_clusters=results['rapidminer']['result'],
+                                                                       o_clusters=results['orange']['result'])
+        else:
+            raise RuntimeError('Unknown functionality')
+        print(compare_results)
+        return compare_results
+
     def _compare_services(self, results):
         if not self.config['comparison']:
             return results
-        # for comparison_criteria in self.config['comparison']:
-        #     if comparison_criteria == ComparisonCriteria.results:
-        #         results = self.service_comparator.c
+        for comparison_criteria in self.config['comparison']:
+            if comparison_criteria == ComparisonCriteria.results:
+                results['service_comparison'] = self._get_service_comparison_results(results)
+        print(results)
+        return results
 
     def process(self, configuration):
         # configuration = {'path': self.edit_data_path.text(),
