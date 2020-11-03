@@ -50,9 +50,9 @@ class RapidMinerService(DataMiningService):
                                               macros={'target': target_name})
         return weights.values.tolist()
 
-    def get_clusters(self):
+    def get_clusters(self, num_clusters):
         df = pandas.read_csv(self._data_path)
-        clusters = self._connector.run_process(PROCESSES['k_means_clusters'], inputs=[df])
+        clusters = self._connector.run_process(PROCESSES['k_means_clusters'], inputs=[df], macros={'num_clusters': num_clusters})
         return clusters['cluster'].values.tolist()
 
     def _get_logged_time(self):

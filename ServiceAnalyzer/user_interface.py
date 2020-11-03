@@ -1,7 +1,7 @@
 import pyqtgraph as pg
 from math import fabs
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QTableWidget, QTableWidgetItem, QMessageBox, \
-    QSizePolicy, QTextEdit, QVBoxLayout
+    QSizePolicy, QTextEdit, QInputDialog
 import csv
 
 import numpy as np
@@ -9,7 +9,6 @@ import numpy as np
 import mainwindow
 import config
 import traceback
-from threading import Thread
 from service_analyzer import ServiceAnalyzer, Functionality, ComparisonCriteria, EvaluationCriteria
 
 DEFAULT_SOURCE_PATH = config.get_config()['Service']['default_sources_path']
@@ -61,6 +60,7 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
             QFileDialog.getOpenFileName(self, 'Path to data for prediction', filter='*.csv',
                                         directory=DEFAULT_SOURCE_PATH)
         self.edit_prediction_data_path.setText(fname)
+        self.load_cvs_file_to_table(fname, self.prediction_table)
 
     def onFunctionalityChanged(self, index):
         enable_prediction_path = False
@@ -277,6 +277,7 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
                          'data_to_predict': '',
                          'rows_increment_index': '',
                          'num_experiments': '',
+                         'clusters': ''
                          }
         try:
             self.clean_table(self.prediction_table)
@@ -293,6 +294,13 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
                     self.show_error_msg('Need path to prediction')
                 self.load_cvs_file_to_table(fname, self.prediction_table)
                 configuration['data_to_predict'] = fname
+            if index == Functionality.k_means_clustering.value:
+                    # get k for experiment
+                    num, ok = QInputDialog.getInt(self, "Number of cluster", "enter k: ")
+                    if ok or num:
+                        configuration['clusters'] = num
+                    else:
+                        raise RuntimeError('You should specify the number of cluster for k-means clustering!')
 
             configuration['functionality'] = Functionality(index)
             if self.cBx_compare_results.isChecked():
@@ -339,9 +347,6 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
         # gather config
         # run process
         # show results
-        # self.barchar_window.update_bar([])
-        # self.barchar_window.show()
-        #th = Thread(target=self.process)
         self.label_status.setText("Processing")
         self.label_status.setStyleSheet(GREEN_STYLE)
         self.label_notes.setStyleSheet(INVISIBLE_STYLE)
@@ -351,8 +356,6 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
         self.setEnabled(False)
         self.repaint()
         self.process()
-
-        #th.start()
 
 
 class GraphWindow(QMainWindow):
@@ -383,14 +386,7 @@ class BarChart(QMainWindow):
         self.graphWidget.setBackground((255, 255, 255))
 
     def update_bar(self, data):
-        # data [count_in_cluster]
-        # # win = self.graphWidget.plot()
-        # # win = pg.plot()
-        # self.graphWidget.setWindowTitle('pyqtgraph BarGraphItem')
-        # self.graphWidget.setWindowTitle('pyqtgraph example: BarGraphItem')
-        # 201, 84,198
         print(data)
         x = np.arange(len(data))
         bg = pg.BarGraphItem(x=x, height=data, width=0.6, brush=(133, 175, 198))
         self.graphWidget.addItem(bg)
-        # self.graphWidget.removeItem()

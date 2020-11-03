@@ -85,9 +85,9 @@ class Orange3Service(DataMiningService):
             result.append([columns[i], model.coefficients[i]])
         return result
 
-    def get_clusters(self):
+    def get_clusters(self, num_clusters):
         data_table = data.Table(self._data_path)
-        km = clustering.KMeans()
+        km = clustering.KMeans(n_clusters=num_clusters)
         return km(data_table).tolist()
 
     def measure_time_execution(self, func, **kwargs):

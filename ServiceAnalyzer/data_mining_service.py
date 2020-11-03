@@ -33,7 +33,7 @@ class DataMiningService(ABC):
      :return [cluster_1, ..]
     '''
     @abstractmethod
-    def get_clusters(self):
+    def get_clusters(self, num_clusters):
         pass
 
     @abstractmethod

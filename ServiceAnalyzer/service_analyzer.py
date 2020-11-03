@@ -89,8 +89,8 @@ class ServiceAnalyzer:
                                                       data_to_predict_path=self.config['data_to_predict'],
                                                       target_name=self.config['target'])
         elif functionality == Functionality.k_means_clustering:
-            results = self._run_service_functionality(service, service.get_clusters)
-            print(results)
+            results = self._run_service_functionality(service, service.get_clusters,
+                                                      num_clusters=self.config['clusters'])
         else:
             raise RuntimeError('Unknown functionality')
         return results
@@ -136,6 +136,7 @@ class ServiceAnalyzer:
         #                  'data_to_predict': '',
         #                  'rows_increment_index': '',
         #                  'num_experiments': '',
+        #                   'clusters': ''
         #                  }
         self.config = configuration
         results = dict({})
