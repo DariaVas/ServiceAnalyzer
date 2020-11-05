@@ -34,33 +34,30 @@ class ServiceAnalyzer:
     def __init__(self):
         self.service_settings = config.get_config()
         self.config = {}
-        self.service_comparator = ServiceComparator()
 
     '''
     :output [(rows, time), ]
     '''
 
     def _find_time_dependence(self, service, func, **kwargs):
-        data_path = self.config['path']
-        rows_increment = self.config['rows_increment_index']
+        data_path = service.get_data_path()
         num_experiments = self.config['num_experiments']
         headers, content, num_of_initial_rows = read_cvs_file(data_path)
-
         generated_path_template = '%s.{}.csv' % str(self.service_settings['Service']['dir_for_generated_files'] +
                                                     os.path.sep +
                                                     os.path.splitext(os.path.basename(data_path))[0])
+        rows_increment = num_of_initial_rows - 1
+
         result = []
         for i in range(num_experiments):
             rows = i * rows_increment + num_of_initial_rows - 1
             file_path = generated_path_template.format(rows)
             if not os.path.exists(file_path):
                 generate_test_cvs_file(file_path, content, headers, rows)
-                print(file_path)
 
             service.set_data_path(file_path)
             _, time = service.measure_time_execution(func, **kwargs)
             result.append((rows, time))
-        # print(result)
         return result
 
     def _run_service_functionality(self, service, service_func, **kwargs):
@@ -76,7 +73,23 @@ class ServiceAnalyzer:
 
         return results
 
+    def _make_preprocess(self, service):
+        data_table = None
+        if self.config['remove_outliers']:
+            data_table = service.remove_outliers()
+        if self.config['normalization']:
+            data_table = service.normalize(data_table)
+        if data_table is None:
+            return
+        generated_path_template = '%s_pre_processed_{}.csv' % str(self.service_settings['Service']['dir_for_generated_files'] +
+                                                    os.path.sep +
+                                                    os.path.splitext(os.path.basename(self.config['path']))[0])
+        generated_path = generated_path_template.format(__class__.__name__)
+        service.save_data_to_file(data_table, generated_path)
+        service.set_data_path(generated_path)
+
     def _get_service_results(self, service):
+        self._make_preprocess(service)
         functionality = self.config['functionality']
         if functionality == Functionality.outliers:
             results = self._run_service_functionality(service, service.get_outliers)
@@ -96,24 +109,24 @@ class ServiceAnalyzer:
         return results
 
     def _get_service_comparison_results(self, results):
+        service_comparator = ServiceComparator(self.config['path'])
         functionality = self.config['functionality']
         compare_results = ''
         if functionality == Functionality.outliers:
-            compare_results = self.service_comparator.compare_outliers(r_outliers=results['rapidminer']['result'],
-                                                                       o_outliers=results['orange']['result'])
+            compare_results = service_comparator.compare_outliers(r_outliers=results['rapidminer']['result'],
+                                                                  o_outliers=results['orange']['result'])
         elif functionality == Functionality.linear_regression:
-            compare_results = self.service_comparator.compare_linear_regression_coefs(
-                r_coefs=results['rapidminer']['result'],
-                o_coefs=results['orange']['result'])
+            compare_results = service_comparator.compare_linear_regression_coefs(
+                r_coefs=results['rapidminer']['result'][1],
+                o_coefs=results['orange']['result'][1])
         elif functionality == Functionality.prediction:
-            compare_results = self.service_comparator.compare_predictions(r_predicts=results['rapidminer']['result'],
-                                                                          o_predicts=results['orange']['result'])
+            compare_results = service_comparator.compare_predictions(r_predicts=results['rapidminer']['result'],
+                                                                     o_predicts=results['orange']['result'])
         elif functionality == Functionality.k_means_clustering:
-            compare_results = self.service_comparator.compare_clusters(r_clusters=results['rapidminer']['result'],
-                                                                       o_clusters=results['orange']['result'])
+            compare_results = service_comparator.compare_clusters(r_clusters=results['rapidminer']['result'],
+                                                                  o_clusters=results['orange']['result'])
         else:
             raise RuntimeError('Unknown functionality')
-        print(compare_results)
         return compare_results
 
     def _compare_services(self, results):
@@ -122,7 +135,6 @@ class ServiceAnalyzer:
         for comparison_criteria in self.config['comparison']:
             if comparison_criteria == ComparisonCriteria.results:
                 results['service_comparison'] = self._get_service_comparison_results(results)
-        print(results)
         return results
 
     def process(self, configuration):
@@ -134,9 +146,10 @@ class ServiceAnalyzer:
         #                  'evaluation_criteria': [],
         #                  'target': ''
         #                  'data_to_predict': '',
-        #                  'rows_increment_index': '',
         #                  'num_experiments': '',
-        #                   'clusters': ''
+        #                  'clusters': '',
+        #                  'normalization': False,
+        #                  'remove_outliers': False
         #                  }
         self.config = configuration
         results = dict({})

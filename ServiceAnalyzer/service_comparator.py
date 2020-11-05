@@ -1,5 +1,11 @@
 import copy
 import math
+import pandas as pd
+
+from sklearn import metrics
+from sklearn.metrics import pairwise_distances
+from sklearn import datasets
+import numpy as np
 
 '''
 1. Outliers
@@ -10,8 +16,9 @@ import math
 
 
 class ServiceComparator:
-    def __init__(self):
-        pass
+    def __init__(self, source_data_path):
+        data = pd.read_csv(source_data_path)
+        self.sources = data.values.tolist()
 
     def compare_outliers(self, r_outliers, o_outliers):
         assert len(r_outliers) == len(o_outliers)
@@ -20,12 +27,12 @@ class ServiceComparator:
                    'rapidminer': copy.copy(r_outliers)}
 
         # Normalize Rapid Miner results [0,1]
-        for i in range(size):
+        for i in range(len(r_outliers)):
             r = results['rapidminer'][i]
             if r > 1:
                 results['rapidminer'][i] = 1
             else:
-                results['rapidminer'][i] = int(round(r))
+                results['rapidminer'][i] = 0
         matches = []
         sum_matches = 0
         # find matches
@@ -48,10 +55,8 @@ class ServiceComparator:
                    'titles': [],
                    'diffs': []}
 
-        print(results)
         # find matches
         for i in range(size):
-            print(o_coefs[i], '', r_coefs[i])
             results['titles'].append(o_coefs[i][0])
             results['diffs'].append(o_coefs[i][1] - r_coefs[i][1])
             results['orange'].append(o_coefs[i][1])
@@ -123,7 +128,31 @@ class ServiceComparator:
         results['distribution']['orange'] = o_list
         results['distribution']['rapidminer'] = r_list
         results['clusters_intersection'] = self._find_clusters_crossing(o_clusters, r_clusters)
+        evaluation_criteria = {
+            'Silhouette index': {'orange': self._get_silhouette_metric(o_clusters),
+                                 'rapid_miner': self._get_silhouette_metric(r_clusters)},
+            'Davies Bouldin index': {'orange': self._get_davies_bouldin_metric(o_clusters),
+                                     'rapid_miner': self._get_davies_bouldin_metric(r_clusters)},
+            'Calinski Harabasz index': {'orange': self._get_calinski_harabasz_metric(o_clusters),
+                                        'rapid_miner': self._get_calinski_harabasz_metric(r_clusters)},
+        }
+        results['evaluation_criteria'] = evaluation_criteria
         return results
+
+    # negative is bad, positive is ok
+    def _get_silhouette_metric(self, clusters):
+        silhouette_metric = metrics.silhouette_score(self.sources, clusters, metric='euclidean')
+        return round(silhouette_metric, 4)
+
+    # the lower the better
+    def _get_davies_bouldin_metric(self, clusters):
+        davies_bouldin_metric = metrics.davies_bouldin_score(self.sources, clusters)
+        return round(davies_bouldin_metric, 4)
+
+    # the higher the better
+    def _get_calinski_harabasz_metric(self, clusters):
+        calinski_harabasz_metric = metrics.calinski_harabasz_score(self.sources, clusters)
+        return round(calinski_harabasz_metric, 4)
 
     def _find_clusters_crossing(self, or_clusters, rp_clusters):
         # return {1: [0,3,5,6,7]}
@@ -167,13 +196,4 @@ class ServiceComparator:
                     o_intersection[r_cluster] = p1
                 if p2 != 0:
                     r_intersection[o_cluster] = p2
-
-        print('Interesting)))')
-        print('Orange')
-        for key in results['orange']:
-            print(key, ' : ', results['orange'][key])
-        print('Rapid Miner')
-        for key in results['rapidminer']:
-            print(key, ' : ', results['rapidminer'][key])
-        print(results)
         return results

@@ -17,6 +17,8 @@ def generate_test_cvs_file(file_path, source_content, source_headers, num_requir
         fout.write(source_headers)
         while rows != num_required_rows:
             for r in source_content:
+                r = r.strip()
+                r = r + '\n'
                 if rows == num_required_rows:
                     break
                 fout.write(r)

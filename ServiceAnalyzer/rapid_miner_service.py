@@ -2,6 +2,8 @@ import os
 import os.path
 import rapidminer
 import pandas
+from pandas import DataFrame
+
 import config
 from data_mining_service import DataMiningService
 
@@ -9,7 +11,9 @@ PROCESSES = {
     'outliers': '//Local Repository/detect_outliers',
     'prediction': '//Local Repository/prediction',
     'linear_regression': '//Local Repository/linear_regression',
-    'k_means_clusters': '//Local Repository/k_means_clustering_with_normalization'
+    'k_means_clusters': '//Local Repository/k_means_clustering',
+    'normalization': '//Local Repository/normalize'
+
 }
 
 TEST_DIR_PATH = '//Local Repository/test_data/'
@@ -26,15 +30,31 @@ class RapidMinerService(DataMiningService):
         self._connector = rapidminer.Studio(rm_home)
         # load dataframe from csv
         self._data_path = data_path
-        # df = pandas.read_csv(data_path)
-        # self._data_path = TEST_DIR_PATH + os.path.basename(data_path)
-        # self._connector.write_resource(df, self._data_path)
+
+    def remove_outliers(self, data_frame=None):
+        outliers = self.get_outliers()
+        if data_frame is None:
+            data_frame = pandas.read_csv(self._data_path)
+        new_indices = []
+        for i in range(len(outliers)):
+            if outliers[i] >= 1:  # not outlier
+                new_indices.append(i)
+            else:
+                print(i)
+        data_frame = data_frame.filter(items=new_indices, axis=0)
+        return data_frame
+
+    def normalize(self, data_frame=None):
+        if data_frame is None:
+            data_frame = pandas.read_csv(self._data_path)
+        # z- centered
+        normalized_data = self._connector.run_process(PROCESSES['normalization'], inputs=[data_frame])
+        return normalized_data
 
     def get_outliers(self):
         # df = self._connector.read_resource(self._data_path)
         df = pandas.read_csv(self._data_path)
         outliers = self._connector.run_process(PROCESSES['outliers'], inputs=[df])
-        print(outliers)
         return outliers['outlier'].to_numpy().tolist()
 
     def get_prediction(self, data_to_predict_path, target_name):
@@ -46,13 +66,18 @@ class RapidMinerService(DataMiningService):
 
     def get_linear_regression_weights(self, target_name):
         df = pandas.read_csv(self._data_path)
-        weights = self._connector.run_process(PROCESSES['linear_regression'], inputs=[df],
-                                              macros={'target': target_name})
-        return weights.values.tolist()
+        data = self._connector.run_process(PROCESSES['linear_regression'], inputs=[df],
+                                           macros={'target': target_name})
+        criterias = {}
+        for i in range(len(data[1])):
+            criterias[data[1]['Criterion'][i]] = data[1]['Value'][i]
+
+        return criterias, data[0].values.tolist()
 
     def get_clusters(self, num_clusters):
         df = pandas.read_csv(self._data_path)
-        clusters = self._connector.run_process(PROCESSES['k_means_clusters'], inputs=[df], macros={'num_clusters': num_clusters})
+        clusters = self._connector.run_process(PROCESSES['k_means_clusters'], inputs=[df],
+                                               macros={'num_clusters': num_clusters})
         return clusters['cluster'].values.tolist()
 
     def _get_logged_time(self):
@@ -83,3 +108,10 @@ class RapidMinerService(DataMiningService):
 
     def set_data_path(self, data_path):
         self._data_path = data_path
+
+    @classmethod
+    def save_data_to_file(cls, data_table, file_path):
+        assert isinstance(data_table, DataFrame)
+        csv_format = data_table.to_csv(index=False)
+        with open(file_path, 'w') as f:
+            f.write(csv_format)
