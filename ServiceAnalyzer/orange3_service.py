@@ -89,7 +89,8 @@ class Orange3Service(DataMiningService):
         res = CrossValidation(data_table, [mean_, ])
         criterias = {'root_mean_squared_error': RMSE(res), 'absolute_error': MAE(res), 'squared_error': MSE(res),
                      'squared_correlation': R2(res)}
-
+        for c in criterias:
+            criterias[c] = round(criterias[c][0], 3)
         return criterias, result
 
     def get_clusters(self, num_clusters):
@@ -115,6 +116,5 @@ class Orange3Service(DataMiningService):
         assert isinstance(data_table, data.Table)
         data_table.save(file_path)
 
-    @property
     def get_data_path(self):
         return self._data_path

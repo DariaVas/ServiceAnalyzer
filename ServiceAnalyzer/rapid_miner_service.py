@@ -70,7 +70,7 @@ class RapidMinerService(DataMiningService):
                                            macros={'target': target_name})
         criterias = {}
         for i in range(len(data[1])):
-            criterias[data[1]['Criterion'][i]] = data[1]['Value'][i]
+            criterias[data[1]['Criterion'][i]] = round(data[1]['Value'][i],3)
 
         return criterias, data[0].values.tolist()
 
@@ -115,3 +115,6 @@ class RapidMinerService(DataMiningService):
         csv_format = data_table.to_csv(index=False)
         with open(file_path, 'w') as f:
             f.write(csv_format)
+
+    def get_data_path(self):
+        return self._data_path
