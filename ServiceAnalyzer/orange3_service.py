@@ -1,11 +1,11 @@
 import datetime
-
 from Orange import clustering, data, classification
 from Orange.data import Domain, ContinuousVariable
 from Orange.regression.linear import LinearRegressionLearner
 from Orange.evaluation import R2, MAE, MSE, RMSE, CrossValidation
 from Orange.preprocess import Normalize
 from data_mining_service import DataMiningService
+from sklearn.preprocessing import StandardScaler
 
 
 class Orange3Service(DataMiningService):
@@ -14,14 +14,13 @@ class Orange3Service(DataMiningService):
 
     def get_outliers(self):
         data_table = data.Table(self._data_path)
-        lof = classification.LocalOutlierFactorLearner(metric="euclidean")
+        lof = classification.LocalOutlierFactorLearner(metric="chebyshev")
         res = lof(data_table)(data_table)
         return list(res.get_column_view('Outlier')[0])
 
     def normalize(self, data_table=None):
         if not data_table:
             data_table = data.Table(self._data_path)
-        # z- centered
         normalizer = Normalize(zero_based=True, norm_type=Normalize.NormalizeBySD, transform_class=False,
                                center=True, normalize_datetime=False)
         normalized_data = normalizer(data_table)
@@ -92,6 +91,11 @@ class Orange3Service(DataMiningService):
         for c in criterias:
             criterias[c] = round(criterias[c][0], 3)
         return criterias, result
+        # columns = [d.name for d in data_table.domain.variables]
+        # columns.remove(target_name)
+        # new_table = data.Table.from_table(domain=d, source=data_table)
+        # mean_ = LinearRegressionLearner()
+        # model = mean_(new_table)
 
     def get_clusters(self, num_clusters):
         data_table = data.Table(self._data_path)

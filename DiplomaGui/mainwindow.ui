@@ -51,7 +51,7 @@
             <x>9</x>
             <y>9</y>
             <width>531</width>
-            <height>445</height>
+            <height>475</height>
            </rect>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout_0">
@@ -210,6 +210,16 @@
               </widget>
              </item>
              <item>
+              <widget class="QCheckBox" name="cBx_calculate_auc_roc">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="text">
+                <string>AUC-ROC metric (for outliers function only)</string>
+               </property>
+              </widget>
+             </item>
+             <item>
               <widget class="QCheckBox" name="cBx_find_execution_time">
                <property name="text">
                 <string>execution time</string>
@@ -343,6 +353,9 @@
               <property name="text">
                <string>unknown</string>
               </property>
+              <property name="textInteractionFlags">
+               <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+              </property>
              </widget>
             </item>
            </layout>
@@ -388,8 +401,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>519</width>
-               <height>481</height>
+               <width>518</width>
+               <height>482</height>
               </rect>
              </property>
              <property name="sizePolicy">
@@ -452,6 +465,9 @@
               <property name="text">
                <string>unknown</string>
               </property>
+              <property name="textInteractionFlags">
+               <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+              </property>
              </widget>
             </item>
            </layout>
@@ -497,8 +513,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>519</width>
-               <height>481</height>
+               <width>518</width>
+               <height>482</height>
               </rect>
              </property>
              <property name="sizePolicy">
@@ -561,6 +577,9 @@
               <property name="text">
                <string>unknown</string>
               </property>
+              <property name="textInteractionFlags">
+               <set>Qt::LinksAccessibleByMouse|Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+              </property>
              </widget>
             </item>
            </layout>
@@ -616,8 +635,8 @@
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>519</width>
-               <height>458</height>
+               <width>518</width>
+               <height>459</height>
               </rect>
              </property>
              <property name="sizePolicy">
@@ -683,8 +702,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>538</width>
-             <height>287</height>
+             <width>537</width>
+             <height>286</height>
             </rect>
            </property>
            <property name="sizePolicy">
@@ -737,8 +756,8 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>538</width>
-             <height>286</height>
+             <width>537</width>
+             <height>285</height>
             </rect>
            </property>
            <property name="sizePolicy">

@@ -3,6 +3,7 @@ from math import fabs
 from PyQt5.QtWidgets import QMainWindow, QFileDialog, QTableWidget, QTableWidgetItem, QMessageBox, \
     QSizePolicy, QTextEdit, QInputDialog
 import csv
+import time
 
 import numpy as np
 
@@ -42,6 +43,14 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
         self.scrollArea_orange_results.setWidget(self.orange_result_table)
         self.scrollArea_rp_results.setWidget(self.rp_result_table)
         self.k_means_results = QTextEdit()
+        self.list_functionality.currentIndexChanged.connect(self.onFunctionalityChanged)
+
+    def onFunctionalityChanged(self, index):
+        enable_outliers = False
+        index = index + 1
+        if index == Functionality.outliers.value:
+            enable_outliers = True
+        self.cBx_calculate_auc_roc.setEnabled(enable_outliers)
 
     def swap_comparison_results_widget(self, show_table=True):
         if show_table:
@@ -52,7 +61,7 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
             self.service_compare_table = QTableWidget()
 
     def onBrowseDataPathClicked(self):
-        fname = QFileDialog.getOpenFileName(self, 'Open file', filter='*.csv', directory=DEFAULT_SOURCE_PATH)[0]
+        fname = QFileDialog.getOpenFileName(self, 'Open file', filter='*.csv')[0]
         if fname:
             self.edit_data_path.setText(fname)
         self.load_cvs_file_to_table(self.edit_data_path.text(), self.table_data)
@@ -124,8 +133,11 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
         for c in service_results:
             if c == 'execution_time':
                 results = results + "{}: {}\n".format("execution time", service_results['execution_time'])
-            if c == 'time_dependence':
+            elif c == 'time_dependence':
                 self._show_chart(service_results['time_dependence'], service_name)
+            elif c == 'auc_roc_score':
+                results = results + "{}: {}\n".format("AUC-ROC score", service_results['auc_roc_score'])
+
         if _config['functionality'] == Functionality.linear_regression:
             for criteria in service_results['result'][0]:
                 results = results + "{}: {}\n".format(criteria, service_results['result'][0][criteria])
@@ -242,7 +254,7 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
 
     def _gather_info_for_prediction(self):
         filename = QFileDialog.getOpenFileName(self, 'Path to data for prediction', filter='*.csv',
-                                               directory=DEFAULT_SOURCE_PATH)[0]
+                                               )[0]
         if not filename:
             self.show_error_msg("You should specify file path!")
             raise RuntimeError()
@@ -262,6 +274,15 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
             raise RuntimeError()
         return target_name.rstrip()
 
+    def _gather_info_for_outliers_metric(self):
+        filename = QFileDialog.getOpenFileName(self, 'Path to data with marked outliers', filter='*.csv',
+                                               )[0]
+        if not filename:
+            self.show_error_msg("You should specify file path!")
+            raise RuntimeError()
+        time.sleep(1)
+        return filename
+
     def process(self):
         configuration = {'path': self.edit_data_path.text(),
                          'functionality': 0,
@@ -274,7 +295,8 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
                          'num_experiments': '',
                          'clusters': '',
                          'normalization': False,
-                         'remove_outliers': False
+                         'remove_outliers': False,
+                         'file_with_outliers': ''  # for auc-roc metric
                          }
         try:
             self.clean_table(self.prediction_table)
@@ -282,13 +304,13 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
             if index == Functionality.linear_regression.value:
                 target = self._gather_info_for_linear_regression()
                 configuration['target'] = target
-            if index == Functionality.prediction.value:
+            elif index == Functionality.prediction.value:
                 fname, target_value = self._gather_info_for_prediction()
                 self.load_cvs_file_to_table(fname, self.prediction_table)
                 configuration['data_to_predict'] = fname
                 configuration['target'] = target_value
 
-            if index == Functionality.k_means_clustering.value:
+            elif index == Functionality.k_means_clustering.value:
                 # get k for experiment
                 num, ok = QInputDialog.getInt(self, "Number of cluster", "enter k: ")
                 if ok or num:
@@ -296,6 +318,9 @@ class ServiceAnalyzerApp(QMainWindow, mainwindow.Ui_MainWindow):
                 else:
                     self.show_error_msg('You should specify the number of cluster for k-means clustering!')
                     return
+            elif index == Functionality.outliers.value and self.cBx_calculate_auc_roc.isChecked():
+                fname = self._gather_info_for_outliers_metric()
+                configuration['file_with_outliers'] = fname
 
             configuration['functionality'] = Functionality(index)
             if self.cBx_compare_results.isChecked():
@@ -374,8 +399,20 @@ class GraphWindow(QMainWindow):
 
     def update_plot(self, data):
         # plot data: x - num rows y - time values
+        self.graphWidget = pg.PlotWidget()
+        self.setCentralWidget(self.graphWidget)
+        self.graphWidget.showGrid(x=True, y=True)
+        self.graphWidget.plotItem.getAxis('left').setLabel('time (ms)')
+        self.graphWidget.plotItem.getAxis('bottom').setLabel('number of processed rows')
         time = []
         rows = []
+        print('rows')
+        for r, _ in data:
+            print(int(r))
+        print('time')
+        for _, t in data:
+            print(int(t))
+
         for r, t in data:
             time.append(t)
             rows.append(r)

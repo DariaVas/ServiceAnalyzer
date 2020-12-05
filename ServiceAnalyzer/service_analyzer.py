@@ -1,9 +1,10 @@
 import os
+import glob
 from enum import Enum
 import config
 from rapid_miner_service import RapidMinerService
 from orange3_service import Orange3Service
-from utils import read_cvs_file, generate_test_cvs_file
+from utils import read_cvs_file, generate_test_cvs_file, convert_string_list_to_int
 from service_comparator import ServiceComparator
 
 
@@ -81,9 +82,10 @@ class ServiceAnalyzer:
             data_table = service.normalize(data_table)
         if data_table is None:
             return
-        generated_path_template = '%s_pre_processed_{}.csv' % str(self.service_settings['Service']['dir_for_generated_files'] +
-                                                    os.path.sep +
-                                                    os.path.splitext(os.path.basename(self.config['path']))[0])
+        generated_path_template = '%s_pre_processed_{}.csv' % str(
+            self.service_settings['Service']['dir_for_generated_files'] +
+            os.path.sep +
+            os.path.splitext(os.path.basename(self.config['path']))[0])
         generated_path = generated_path_template.format(__class__.__name__)
         service.save_data_to_file(data_table, generated_path)
         service.set_data_path(generated_path)
@@ -93,6 +95,10 @@ class ServiceAnalyzer:
         functionality = self.config['functionality']
         if functionality == Functionality.outliers:
             results = self._run_service_functionality(service, service.get_outliers)
+            if self.config['file_with_outliers']:
+                _, outliers_score, _ = read_cvs_file(self.config['file_with_outliers'])
+                outliers_score = convert_string_list_to_int(outliers_score)
+                results['auc_roc_score'] = service.get_roc_auc_score(outliers_score, results['result'])
         elif functionality == Functionality.linear_regression:
             results = self._run_service_functionality(service, service.get_linear_regression_weights,
                                                       target_name=self.config['target'])
@@ -138,6 +144,10 @@ class ServiceAnalyzer:
         return results
 
     def process(self, configuration):
+
+        files = glob.glob('{}/*'.format(self.service_settings['Service']['dir_for_generated_files']))
+        for f in files:
+            os.remove(f)
         # configuration = {'path': self.edit_data_path.text(),
         #                  'functionality': 0,
         #                  'rapidminer': self.cBx_rp_service_run.isChecked(),
@@ -149,7 +159,8 @@ class ServiceAnalyzer:
         #                  'num_experiments': '',
         #                  'clusters': '',
         #                  'normalization': False,
-        #                  'remove_outliers': False
+        #                  'remove_outliers': False,
+        #                  'file_with_outliers':''
         #                  }
         self.config = configuration
         results = dict({})

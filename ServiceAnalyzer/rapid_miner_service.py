@@ -6,6 +6,7 @@ from pandas import DataFrame
 
 import config
 from data_mining_service import DataMiningService
+from sklearn.preprocessing import StandardScaler
 
 PROCESSES = {
     'outliers': '//Local Repository/detect_outliers',
@@ -70,7 +71,7 @@ class RapidMinerService(DataMiningService):
                                            macros={'target': target_name})
         criterias = {}
         for i in range(len(data[1])):
-            criterias[data[1]['Criterion'][i]] = round(data[1]['Value'][i],3)
+            criterias[data[1]['Criterion'][i]] = round(data[1]['Value'][i], 3)
 
         return criterias, data[0].values.tolist()
 
@@ -88,7 +89,7 @@ class RapidMinerService(DataMiningService):
                 print(l)
                 if l.startswith('#'):
                     continue
-                nums = [float(n.strip()) for n in l.split('\t')]
+                nums = [float(n.strip()) if 'null' not in n else 0 for n in l.split('\t')]
                 return sum(nums)
 
     def measure_time_execution(self, func, **kwargs):

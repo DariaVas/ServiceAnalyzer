@@ -23,3 +23,10 @@ def generate_test_cvs_file(file_path, source_content, source_headers, num_requir
                     break
                 fout.write(r)
                 rows += 1
+
+
+def convert_string_list_to_int(list_):
+    new_list = []
+    for item in list_:
+        new_list.append(int(item.rstrip()))
+    return new_list
